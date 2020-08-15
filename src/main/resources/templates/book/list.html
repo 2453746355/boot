@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Title</title>
+    <link rel="stylesheet" href="//res.layui.com/layui/dist/css/layui.css?t=1596625002440" media="all">
+    <style>
+        body{margin: 10px;}
+        .demo-carousel{height: 200px; line-height: 200px; text-align: center;}
+    </style>
+</head>
+<body>
+<!-- 搜索条件 -->
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">书籍名称</label>
+                    <div class="layui-input-block">
+                        <input id="search_book_name" type="text" autocomplete="off" placeholder="请输入书籍名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">发布网站</label>
+                    <div class="layui-input-block">
+                        <select id="search_book_home">
+                            <option value="0"></option>
+                            <option value="1">起点中文网</option>
+                            <option value="2">纵横中文网</option>
+                            <option value="3">笔趣阁</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    <!-- id属性是为了渲染数据， lay-filter属性是为了监听工具栏（表格工具栏、行工具栏）按钮时间-->
+    <table class="layui-hide" id="book_table" lay-filter="book_table_filter"></table>
+    <div class="layui-hide" id="book_table_col_tool_bar_div">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </div>
+
+    <!-- 表格工具栏 -->
+    <div class="layui-hide" id="book_table_tool_bar_div">
+        <a class="layui-btn layui-btn-sm" lay-event="search_book">搜索</a>
+    </div>
+
+    <script>
+        layui.use(['table', 'layer', 'form'], function(){
+            var table = layui.table;
+            var layer = layui.layer;
+            var form = layui.form;
+            form.render();
+
+            var book_table = table.render({
+                page: true//开启分页
+                ,toolbar: 'default'//开启工具栏
+                ,totalRow: true //开启合计行
+                ,elem: '#book_table'
+                ,url:'book/list'
+                ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+                ,cols: [ [
+                    {field:'bookName', title: '书籍名称', sort: true}
+                    ,{field:'bookAuthor', title: '作者名称'}
+                    ,{field:'bookPrice', title: '书籍价格'}
+                    ,{field:'bookType', title: '书籍类型', sort: true, templet:function(d) {
+                            switch (d.bookType) {
+                                case 1:
+                                    return "西方玄幻";
+                                case 2:
+                                    return "东方玄幻";
+                                case 3:
+                                    return "历史架空";
+                                case 4:
+                                    return "都市言情";
+                                case 5:
+                                    return "奇幻科技";
+                                default :
+                                    return "<font color='#ff1493'>未定义</font>";
+                            }
+                        }}
+                    ,{field:'bookTags', title: '书籍标签', sort: true}
+                    ,{field:'bookDateStr', title: '日期', sort: true}
+                    ,{field:'bookHome', title: '发布网站' , templet:function(d) {
+                            switch (d.bookHome) {
+                                case 0:
+                                    return "请选择";
+                                case 1:
+                                    return "起点中文网";
+                                case 2:
+                                    return "纵横中文网";
+                                case 3:
+                                    return "笔趣阁";
+
+                            }
+                        }}
+                    ,{fixed: 'right', title: '操作', toolbar:"#book_table_col_tool_bar_div"}
+                ]]
+            });
+            //监听行工具事件（操作列）
+            table.on('tool(book_table_filter)', function(obj){
+                var data = obj.data;
+                //console.log(obj)
+                if(obj.event === 'edit'){
+                    //打开对话框
+                    $.get(
+                        "book/toEdit",
+                        {bookID:data.bookID},
+                        function (data) {
+                            layer.open({
+                                title: '编辑店铺'
+                                ,type:1
+                                ,area: ['600px', '450px']
+                                ,content: data
+                                ,btn: ['提交', '取消']
+                                ,yes: function(index, layero) {
+                                    //获取编辑页面上隐藏的提交按钮，并执行它的提交方法
+                                    $("#book_edit_submit_btn").click();
+                                    layer.alert("修改成功");
+                                    //关闭对话框
+                                    layer.close(index);
+                                    //刷新页面
+                                    book_table.reload();
+                                }
+                            });
+                        }
+                    );
+                }
+            });
+
+            //监听表格工具栏事件
+            table.on('toolbar(book_table_filter)', function(obj){
+                switch(obj.event){
+                    case 'search_book':
+                        //获取条件的值
+                        var search_book_name = $("#search_book_name").val();
+                        var search_book_home = $("#search_book_home").val();
+                        //执行搜索
+                        book_table.reload({
+                            where:{
+                                bookName:search_book_name,
+                                bookHome:search_book_home
+                            }
+                        });
+                        break;
+                };
+            });
+        });
+    </script>
+</body>
+</html>
